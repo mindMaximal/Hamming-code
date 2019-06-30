@@ -399,11 +399,13 @@ int menu()
 		result = encryption(file_name_in, file_name_out);
 		if (result == 1)
 		{
+			cout << endl;
 			system("pause");
 			menu();
 		}
 		else {
 			cout << "Что-то пошло не так" << endl;
+			cout << endl;
 			system("pause");
 			menu();
 		}
