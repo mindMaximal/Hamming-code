@@ -3,7 +3,7 @@
 	https://habr.com/ru/post/140611/
 	http://forum.codenet.ru/q38614/ - Пример
 	https://decodeit.ru/binary - бинарный декодер/кодер
-	https://code-live.ru/forum/cpp/167/ - меню]
+	https://code-live.ru/forum/cpp/167/ - меню
 	https://generator-online.com/text/ - генератор текста
 */
 
@@ -236,7 +236,7 @@ int encryption(string file_name_default_in, string file_name_default_out)
 int decoding(string file_name_default_in, string file_name_default_out)
 {
 	vector<int> degrees;
-	string line, text;
+	string line, text, line_q;
 	int i = 0;
 
 	ifstream file;
@@ -263,18 +263,20 @@ int decoding(string file_name_default_in, string file_name_default_out)
 					for (int d = 0; d <= size; d++)
 					{
 						int degree = pow(2, d);
-						degrees.push_back(degree);
+						if (line.length() != degree)
+						{
+							degrees.push_back(degree);
+						}
 					}
-					//test
-					//line = "010011011010"; //11-n misstake
 				}
 				i++;
-
+				int misstake_pos = 0;
 				for (int d = 0; d < degrees.size(); d++)
 				{
 					//cout << "\n\nSize: " << line.size() << endl;
 					//cout << "-------------------" << endl << "degrees[d]: " << degrees[d] << endl;
 					int sum = 0;
+		
 					for (int k = degrees[d] - 1; k < line.size(); k = k + degrees[d] + 1)
 					{
 						//Счетчик кол-ва символов, пройденных следующим циклом for
@@ -307,20 +309,59 @@ int decoding(string file_name_default_in, string file_name_default_out)
 						sum = 1;
 					}
 					sum = sum + '0';
-					if (line[degrees[d] - 1] == sum)
+					if (line[degrees[d] - 1] != sum)
 					{
-						cout << "Элемент [" << degrees[d] << "] совпадает" << endl;
+						misstake_pos += degrees[d];
+						//cout << "Элемент [" << degrees[d] << "] не совпадает" << endl;
 					}
 					else
 					{
-						cout << "Элемент [" << degrees[d] << "] не совпадает" << endl;
+						//cout << "Элемент [" << degrees[d] << "] совпадает" << endl;
 					}
 
 				}
 
-				cout << "Line [" << i << "] - " << line << endl;
+				//cout << "Line [" << i << "] - " << line << " Позиция ошибки - " << misstake_pos << endl;
+
+				//Исправление ошибок
+				if ( misstake_pos != 0)
+				{
+					int misstake = line[misstake_pos - 1] - '0';
+					if (misstake == 1)
+					{
+						line[misstake_pos - 1] = 0 + '0';
+					}
+					else if (misstake == 0)
+					{
+						line[misstake_pos - 1] = 1 + '0';
+					}
+				}
+				//Удаление контрольных битов
+				for (int d = degrees.size() - 1; d >= 0; d--)
+				{
+					line.erase(degrees[d] - 1, 1);
+				}
+				//cout << "Line [" << i << "] fixed - " << line << endl;
+				text += line;
 			}
 		}
+		line = "";
+		i = 0;
+		for (char simbol : text)
+		{
+			i++;
+			line_q += simbol;
+			//Перевод символа из двоичного кода
+			if (i == 8)
+			{
+				i = 0;
+				bitset<8> foo(line_q);
+				unsigned char ch = static_cast<unsigned char> (foo.to_ulong());
+				line += ch;
+				line_q = "";
+			}
+		}
+		cout << line << endl;
 		return 1;
 	}
 	else
@@ -351,7 +392,6 @@ int menu()
 			<< "(Введите \"d\", если хотите использовать стандартные имена)\n"
 			<< "--> ";
 		cin >> file_name_out;
-		//Default for test
 		if (file_name_out == "d")
 		{
 			file_name_out = "text_encrypted.txt";
@@ -374,13 +414,18 @@ int menu()
 			<< "(Введите \"d\", если хотите использовать стандартные имена)\n"
 			<< "--> ";
 		cin >> file_name_in;
+		if (file_name_in == "d")
+		{
+			file_name_in = "text_encrypted.txt";
+		}
 		cout << "Пожалуйста, введите имя файла, в который сохранится результат\n"
 			<< "(Введите \"d\", если хотите использовать стандартные имена)\n"
 			<< "--> ";
 		cin >> file_name_out;
-		//Default for test
-		file_name_in = "text_encrypted.txt";
-		file_name_out = "text_decoded.txt";
+		if (file_name_out == "d")
+		{
+			file_name_out = "text_decoded.txt";
+		}
 		result = decoding(file_name_in, file_name_out);
 		if (result == 1)
 		{
