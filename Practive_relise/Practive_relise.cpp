@@ -1,13 +1,4 @@
-﻿/*
-	https://habr.com/ru/post/140611/
-	http://forum.codenet.ru/q38614/ - Пример
-	https://decodeit.ru/binary - бинарный декодер/кодер
-	https://code-live.ru/forum/cpp/167/ - меню
-	https://generator-online.com/text/ - генератор текста
-	Статистика, библиотеки
-*/
-
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <fstream>
 
