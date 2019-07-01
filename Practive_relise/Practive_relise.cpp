@@ -1,22 +1,43 @@
 ﻿/*
-	Pracite.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 	https://habr.com/ru/post/140611/
 	http://forum.codenet.ru/q38614/ - Пример
 	https://decodeit.ru/binary - бинарный декодер/кодер
 	https://code-live.ru/forum/cpp/167/ - меню
 	https://generator-online.com/text/ - генератор текста
+	Статистика, библиотеки
 */
 
-#include <bitset>
 #include <iostream>
 #include <string>
 #include <fstream>
-#include <math.h>
-#include <vector>
-#include <algorithm>
-#include <cstdio>
 
 using namespace std;
+
+string char_to_binary(unsigned char val)
+{
+	int binary = 0;
+	string line_temp;
+
+	for (int i = 7; i >= 0; --i)
+	{
+		binary *= 10;
+
+		if (val & (1 << i))
+			binary += 1;
+	}
+
+	line_temp = to_string(binary);
+
+	if (line_temp.length() < 8)
+	{
+		for (int d = line_temp.length(); d < 8; d++)
+		{
+			line_temp = "0" + line_temp;
+		}
+	}
+
+	return line_temp;
+}
 
 int prompt_menu_item()
 {
@@ -30,7 +51,7 @@ int prompt_menu_item()
 		<< "5. 32\n"
 		<< "6. 48\n"
 		<< "7. 64\n"
-		<< "8. выйти\n" << endl;
+		<< endl;
 	cout << ">>> ";
 	cin >> variant;
 	switch (variant)
@@ -55,9 +76,6 @@ int prompt_menu_item()
 		break;
 	case 7:
 		variant = 64;
-		break;
-	case 8:
-		variant = 0;
 		break;
 	default:
 		break;
@@ -100,8 +118,7 @@ int encryption(string file_name_default_in, string file_name_default_out)
 	int bz = block_size;
 	int size = 0;
 	while (bz >>= 1) size++;
-	vector<int> degrees;
-
+	int* p_darr = new int[size];
 
 	ifstream file;
 	ofstream out;
@@ -110,21 +127,15 @@ int encryption(string file_name_default_in, string file_name_default_out)
 	file.open(file_name_default_in);
 	if (file.is_open())
 	{
-
 		//Создание массива со степени двойки
 		for (i = 0; i <= size; i++)
 		{
 			int degree = pow(2, i);
-			degrees.push_back(degree);
+			p_darr[i] = degree;
 		}
 
 		//Обработка меню
-		if (block_size == 0)
-		{
-			cout << "Выход из программы..." << endl;
-			exit(EXIT_SUCCESS);
-		}
-		else if (block_size != 8 && block_size != 12 && block_size != 16 && block_size != 24 && block_size != 32 && block_size != 48 && block_size != 64)
+		if (block_size != 8 && block_size != 12 && block_size != 16 && block_size != 24 && block_size != 32 && block_size != 48 && block_size != 64)
 		{
 			cerr << "Вы выбрали неверный вариант" << endl;
 			exit(EXIT_SUCCESS);
@@ -137,9 +148,34 @@ int encryption(string file_name_default_in, string file_name_default_out)
 			i = 0;
 			//Посимвольный перевод в двоичный код и запись в файл
 			for (char simbol : line)
-			{
-				bitset<8> bs(simbol);
-				out << bs.to_string();
+			{	
+				if ( block_size == 12 )
+				{
+					i++;
+
+					if ( i % 3 == 0 )
+					{
+						out << char_to_binary(simbol) << endl;
+					}
+					else if ( i % 3 == 1 )
+					{
+						out << char_to_binary(simbol);
+					} 
+					else if ( i % 3 == 2 )
+					{
+						string str_t = char_to_binary(simbol);
+						out << str_t.substr(0, 4) << endl << str_t.substr(4, 4);
+					}
+				}
+				else
+				{
+					i += 8;
+					out << char_to_binary(simbol);
+					if (i % block_size == 0)
+					{
+						out << endl;
+					}
+				}
 			}
 		}
 
@@ -157,64 +193,64 @@ int encryption(string file_name_default_in, string file_name_default_out)
 		//Обработка текста
 		while (!file.eof())
 		{
-			getline(file, text);
-			for (char simbol : text)
-			{
-				i++;
-				line += simbol;
-
-				if (i % block_size == 0)
+			getline(file, line);
+			if ( line.length() != 0 )
+			{	
+				if ( (int)line.length() < block_size )
 				{
-					//cout << "Line (default): " << line << endl;
-					for (int d = 0; d <= size; d++)
+					for (int d = line.length(); d < block_size; d++)
 					{
-						//Установка контрольних битов
-						line.insert(degrees[d] - 1, "0");
+						line += "0";
 					}
-					//cout << "Line (control bits = 0): " << line << endl;
-					for (int d = 0; d <= size; d++)
+				}
+				for (int d = 0; d <= size; d++)
+				{
+					//Установка контрольних битов
+					line.insert(p_darr[d] - 1, "0");
+				}
+				for (int d = 0; d <= size; d++)
+				{
+					for (int k = p_darr[d] - 1; k < (int)line.size(); k = k + p_darr[d] + 1)
 					{
-						//cout << "Size: " << line.size() << endl;
-						//cout << "-------------------" << endl << "degrees[d]: " << degrees[d] << endl;
-
-						for (int k = degrees[d] - 1; k < line.size(); k = k + degrees[d] + 1)
+						//Счетчик кол-ва символов, пройденных следующим циклом for
+						int f = 0;
+						for (int j = k; j <= k + p_darr[d] - 1; j++)
 						{
-							//Счетчик кол-ва символов, пройденных следующим циклом for
-							int f = 0;
-							for (int j = k; j <= k + degrees[d] - 1; j++)
+							if (j >= (int)line.size())
 							{
-								if (j >= line.size())
-								{
+								break;
+							} 
+							//Если это не контрольный бит, то считаем сумму
+							for (i = 0; i < size; i++) {
+								if (p_darr[i] == j + 1 ) {
 									break;
 								}
-								//Если это не контрольный бит, то считаем сумму
-								if (find(degrees.begin(), degrees.end(), j + 1) == degrees.end())
-								{
-									//Элемент не найден в массиве
-									char c = line[j];
-									sum += c - '0';
-								}
-								f++;
 							}
-							k += f - 1;
+							if (i >= size )
+							{
+								//Элемент не найден в массиве
+								char c = line[j];
+								sum += c - '0';
+							}
+							f++;
 						}
-						if (sum % 2 == 0)
-						{
-							//четное
-							sum = 0;
-						}
-						else
-						{
-							//нечетное
-							sum = 1;
-						}
-						line[degrees[d] - 1] = sum + '0';
+						k += f - 1;
+					}
+					if (sum % 2 == 0)
+					{
+						//четное
 						sum = 0;
 					}
-					out << line << endl;
-					//cout << "Line (after): " << line << endl;
-					line = "";
+					else
+					{
+						//нечетное
+						sum = 1;
+					}
+					line[p_darr[d] - 1] = sum + '0';
+					sum = 0;
 				}
+				out << line << endl;
+				line = "";
 			}
 		}
 		cout << "Файл зашифрован." << endl;
@@ -235,9 +271,11 @@ int encryption(string file_name_default_in, string file_name_default_out)
 
 int decoding(string file_name_default_in, string file_name_default_out)
 {
-	vector<int> degrees;
+	int p_darr[7] = { 1, 2, 4, 8, 16, 32, 64 };
 	string line, text, line_q;
 	int i = 0;
+	int size = 0;
+	int misstake_count = 0;
 
 	ifstream file;
 	ofstream out;
@@ -259,36 +297,44 @@ int decoding(string file_name_default_in, string file_name_default_out)
 				{
 					float size_q = log(line.length()) / log(2);
 					size_q = floor(size_q);
-					int size = (int)size_q;
-					for (int d = 0; d <= size; d++)
-					{
-						int degree = pow(2, d);
-						if (line.length() != degree)
-						{
-							degrees.push_back(degree);
-						}
+					size = (int)size_q + 1;
+				}
+
+				//Если длина строки совпадает с степенью 2, то не считаем последний бит, как контрольный
+				for (i = 0; i < size; i++) {
+					if ( p_darr[i] == line.length() ) {
+						break;
 					}
 				}
+				if (i < size)
+				{
+					//Элемент найден в массиве
+					size--;
+				}
+
 				i++;
 				int misstake_pos = 0;
-				for (int d = 0; d < degrees.size(); d++)
+				for (int d = 0; d < size; d++)
 				{
-					//cout << "\n\nSize: " << line.size() << endl;
-					//cout << "-------------------" << endl << "degrees[d]: " << degrees[d] << endl;
 					int sum = 0;
 		
-					for (int k = degrees[d] - 1; k < line.size(); k = k + degrees[d] + 1)
+					for (int k = p_darr[d] - 1; k < (int)line.size(); k = k + p_darr[d] + 1)
 					{
 						//Счетчик кол-ва символов, пройденных следующим циклом for
 						int f = 0;
-						for (int j = k; j <= k + degrees[d] - 1; j++)
+						for (int j = k; j <= k + p_darr[d] - 1; j++)
 						{
-							if (j >= line.size())
+							if (j >= (int)line.size())
 							{
 								break;
 							}
 							//Если это не контрольный бит, то считаем сумму
-							if (find(degrees.begin(), degrees.end(), j + 1) == degrees.end())
+							for (i = 0; i < size; i++) {
+								if (p_darr[i] == j + 1) {
+									break;
+								}
+							}
+							if (i >= size)
 							{
 								//Элемент не найден в массиве
 								char c = line[j];
@@ -309,23 +355,14 @@ int decoding(string file_name_default_in, string file_name_default_out)
 						sum = 1;
 					}
 					sum = sum + '0';
-					if (line[degrees[d] - 1] != sum)
-					{
-						misstake_pos += degrees[d];
-						//cout << "Элемент [" << degrees[d] << "] не совпадает" << endl;
-					}
-					else
-					{
-						//cout << "Элемент [" << degrees[d] << "] совпадает" << endl;
-					}
+					if (line[p_darr[d] - 1] != sum) misstake_pos += p_darr[d];
 
 				}
-
-				//cout << "Line [" << i << "] - " << line << " Позиция ошибки - " << misstake_pos << endl;
 
 				//Исправление ошибок
 				if ( misstake_pos != 0)
 				{
+					cout << "Найдена ошибка в строке " << i << ", ее позиция - " << misstake_pos << endl;
 					int misstake = line[misstake_pos - 1] - '0';
 					if (misstake == 1)
 					{
@@ -335,13 +372,13 @@ int decoding(string file_name_default_in, string file_name_default_out)
 					{
 						line[misstake_pos - 1] = 1 + '0';
 					}
+					misstake_count++;
 				}
 				//Удаление контрольных битов
-				for (int d = degrees.size() - 1; d >= 0; d--)
+				for (int d = size - 1; d >= 0; d--)
 				{
-					line.erase(degrees[d] - 1, 1);
+					line.erase(p_darr[d] - 1, 1);
 				}
-				//cout << "Line [" << i << "] fixed - " << line << endl;
 				text += line;
 			}
 		}
@@ -354,19 +391,32 @@ int decoding(string file_name_default_in, string file_name_default_out)
 			//Перевод символа из двоичного кода
 			if (i == 8)
 			{
-				i = 0;
-				bitset<8> foo(line_q);
-				unsigned char ch = static_cast<unsigned char> (foo.to_ulong());
+				int val = 0;
+				for (char sim : line_q)
+				{
+					i--;
+					int sim_i = sim - '0';
+					val += pow(2, i) * sim_i;
+				}
+				char ch = static_cast<char>(val);
 				line += ch;
 				line_q = "";
 			}
 		}
-		cout << line << endl;
+		cout << "\n- - - - - - - - - - - - - - - - -\n" 
+			<< "Количество исправленных ошибок: "
+			<< misstake_count 
+			<< endl 
+			<< endl;
+		out << line << endl;
+		cout << "Текст: \n \n"
+			<< line
+			<< endl;
 		return 1;
 	}
 	else
 	{
-		cout << "Не удается открыть файл";
+		cout << "Не удается открыть файл" << endl;
 		return 0;
 	}
 	out.close();
@@ -455,80 +505,6 @@ int menu()
 int main()
 {
 	setlocale(LC_CTYPE, "rus");
-
 	menu();
-
-	//line = "000010000100001011101";
-
-	//text = "";
-	//line = "";
-	//line_q = "";
-	//file.open("text_encrypted.txt");
-	//if (file.is_open())
-	//{
-	//	while (!file.eof())
-	//	{
-	//		getline(file, line);
-	//		
-	//		for ( i = 0; i < size; i++)
-	//		{
-	//			line.insert(degrees[i] - 1, "0");
-	//		}
-
-	//		text += line;
-	//		text += "\n";
-	//	}
-	//}
-
-	//cout << "Text: \n" << text << endl;
-
-	////Обнуление переменных
-	//text = "";
-	//line = "";
-	//line_q = "";
-
-	////Обработка файла с двоичным кодом
-	//file.open("text_encrypted.txt");
-	//if (file.is_open())
-	//{
-	//	while (!file.eof())
-	//	{
-
-	//		getline(file, line);
-	//		i = 0;
-	//		text += line;
-	//		//Посимвольный перебор
-	//	}
-	//	for (char simbol : text)
-	//	{
-	//		i++;
-	//		line_q += simbol;
-
-	//		//Перевод символа из двоичного кода
-	//		if (i == 8)
-	//		{
-	//			i = 0;
-	//			bitset<8> foo(line_q);
-	//			unsigned char ch = static_cast<unsigned char> (foo.to_ulong());
-	//			text += ch;
-	//			line_q = "";
-	//		}
-	//	}
-	//	file.close();
-	//	file.clear();
-	//}
-	//cout << "File: " << text << endl;
-	//system("pause");
 	return 0;
 }
-
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
-
-// Советы по началу работы 
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" > "Открыть" > "Проект" и выберите SLN-файл.
