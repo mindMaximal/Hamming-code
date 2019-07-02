@@ -3,8 +3,8 @@
 #include <fstream>
 
 using namespace std;
-
-string char_to_binary(unsigned char val)
+//Получение двоичного представления символа
+string get_binary(unsigned char val)
 {
 	int binary = 0;
 	string line_temp;
@@ -29,8 +29,8 @@ string char_to_binary(unsigned char val)
 
 	return line_temp;
 }
-
-int prompt_menu_item()
+//Получение размера текстового блока
+int get_block_size()
 {
 	// Выбранный вариант
 	int variant;
@@ -73,8 +73,8 @@ int prompt_menu_item()
 	}
 	return variant;
 }
-
-int	prompt_menu_main()
+//Вызов основного меню
+int	get_main_menu()
 {
 	int variant;
 	system("cls");
@@ -99,13 +99,13 @@ int	prompt_menu_main()
 	}
 	return variant;
 }
-
+//Декодирование файла
 int encryption(string file_name_default_in, string file_name_default_out)
 {
-	string line, text;
+	string line;
 	int i;
 	int sum = 0;
-	int block_size = prompt_menu_item();
+	int block_size = get_block_size();
 	int bz = block_size;
 	int size = 0;
 	while (bz >>= 1) size++;
@@ -146,22 +146,22 @@ int encryption(string file_name_default_in, string file_name_default_out)
 
 					if ( i % 3 == 0 )
 					{
-						out << char_to_binary(simbol) << endl;
+						out << get_binary(simbol) << endl;
 					}
 					else if ( i % 3 == 1 )
 					{
-						out << char_to_binary(simbol);
+						out << get_binary(simbol);
 					} 
 					else if ( i % 3 == 2 )
 					{
-						string str_t = char_to_binary(simbol);
+						string str_t = get_binary(simbol);
 						out << str_t.substr(0, 4) << endl << str_t.substr(4, 4);
 					}
 				}
 				else
 				{
 					i += 8;
-					out << char_to_binary(simbol);
+					out << get_binary(simbol);
 					if (i % block_size == 0)
 					{
 						out << endl;
@@ -259,7 +259,7 @@ int encryption(string file_name_default_in, string file_name_default_out)
 	out.close();
 	out.clear();
 }
-
+//Кодирование файла
 int decoding(string file_name_default_in, string file_name_default_out)
 {
 	int p_darr[7] = { 1, 2, 4, 8, 16, 32, 64 };
@@ -267,6 +267,7 @@ int decoding(string file_name_default_in, string file_name_default_out)
 	int i = 0;
 	int size = 0;
 	int misstake_count = 0;
+	int line_count = 0;
 
 	ifstream file;
 	ofstream out;
@@ -284,7 +285,7 @@ int decoding(string file_name_default_in, string file_name_default_out)
 			if (line.length() > 0)
 			{
 				//Создание массива со степени двойки при первом проходе цикла
-				if (i == 0)
+				if (line_count == 0)
 				{
 					float size_q = log(line.length()) / log(2);
 					size_q = floor(size_q);
@@ -303,7 +304,7 @@ int decoding(string file_name_default_in, string file_name_default_out)
 					size--;
 				}
 
-				i++;
+				line_count++;
 				int misstake_pos = 0;
 				for (int d = 0; d < size; d++)
 				{
@@ -353,7 +354,7 @@ int decoding(string file_name_default_in, string file_name_default_out)
 				//Исправление ошибок
 				if ( misstake_pos != 0)
 				{
-					cout << "Найдена ошибка в строке " << i << ", ее позиция - " << misstake_pos << endl;
+					cout << "Найдена ошибка, в строке " << line_count << " ее позиция - " << misstake_pos << endl;
 					int misstake = line[misstake_pos - 1] - '0';
 					if (misstake == 1)
 					{
@@ -413,11 +414,11 @@ int decoding(string file_name_default_in, string file_name_default_out)
 	out.close();
 	out.clear();
 }
-
-int menu()
+//Вызов вспомогательного меню
+int get_menu()
 {
 	string file_name_in, file_name_out;
-	int menu_res = prompt_menu_main();
+	int menu_res = get_main_menu();
 	int result;
 	if (menu_res == 1)
 	{
@@ -442,13 +443,13 @@ int menu()
 		{
 			cout << endl;
 			system("pause");
-			menu();
+			get_menu();
 		}
 		else {
 			cout << "Что-то пошло не так" << endl;
 			cout << endl;
 			system("pause");
-			menu();
+			get_menu();
 		}
 	}
 	else if (menu_res == 2)
@@ -473,12 +474,12 @@ int menu()
 		if (result == 1)
 		{
 			system("pause");
-			menu();
+			get_menu();
 		}
 		else {
 			cout << "Что-то пошло не так" << endl;
 			system("pause");
-			menu();
+			get_menu();
 		}
 	}
 	else if (menu_res == 3)
@@ -496,6 +497,6 @@ int menu()
 int main()
 {
 	setlocale(LC_CTYPE, "rus");
-	menu();
+	get_menu();
 	return 0;
 }
