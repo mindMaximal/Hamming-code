@@ -291,7 +291,6 @@ int decoding(string file_name_default_in, string file_name_default_out)
 					size_q = floor(size_q);
 					size = (int)size_q + 1;
 				}
-
 				//Если длина строки совпадает с степенью 2, то не считаем последний бит, как контрольный
 				for (i = 0; i < size; i++) {
 					if ( p_darr[i] == line.length() ) {
